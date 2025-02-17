@@ -1,4 +1,4 @@
-# 응급상황 자동 인식 및 응급실/소방서 연계 서비스 개발 프로젝트 정리(Emergency-Room-Linkage-Service)
+# 응급상황 자동 인식 및 응급실/소방서 연계 서비스(Emergency-Room-Linkage-Service)
 openapi_key, naver_api_kei, 응급실 api_key를 발급받으셔야 합니다.
 
 # 💡과제 선정 배경
