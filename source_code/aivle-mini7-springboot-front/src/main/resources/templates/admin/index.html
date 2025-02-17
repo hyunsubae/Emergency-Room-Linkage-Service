@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{admin/layout}"
+>
+  <div layout:fragment="content">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h3 class="card-title mb-0">응급 상황 로그 기록</h3>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 mb-4">
+          <!-- 전체 응급 상황 수 -->
+          <div class="col-md-3">
+            <div class="card bg-primary text-white">
+              <div class="card-body">
+                <h6 class="card-subtitle mb-2">전체 응급 상황</h6>
+                <h2 class="card-title mb-0" th:text="${stats.totalCases}">0</h2>
+                <small class="text-white-50">건</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- 응급 상황 비율 -->
+          <div class="col-md-3">
+            <div class="card bg-danger text-white">
+              <div class="card-body">
+                <h6 class="card-subtitle mb-2">응급 상황 비율</h6>
+                <h2
+                  class="card-title mb-0"
+                  th:text="${stats.emergencyRatio + '%'}"
+                >
+                  0%
+                </h2>
+                <small
+                  class="text-white-50"
+                  th:text="${stats.emergencyCases + '건'}"
+                  >0건</small
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- 평균 도착 시간 -->
+          <div class="col-md-3">
+            <div class="card bg-success text-white">
+              <div class="card-body">
+                <h6 class="card-subtitle mb-2">평균 도착 시간</h6>
+                <h2
+                  class="card-title mb-0"
+                  th:text="${stats.avgArrivalTime + '분'}"
+                >
+                  0분
+                </h2>
+                <small class="text-white-50"
+                  >예상 대비
+                  <span th:text="${stats.arrivalTimeDiff + '분'}"></span>
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- 가장 많이 추천된 병원 -->
+          <div class="col-md-3">
+            <div class="card bg-info text-white">
+              <div class="card-body">
+                <h6 class="card-subtitle mb-2">최다 추천 병원</h6>
+                <h5
+                  class="card-title mb-0"
+                  th:text="${stats.mostRecommendedHospital}"
+                >
+                  -
+                </h5>
+                <small
+                  class="text-white-50"
+                  th:text="${stats.mostRecommendedHospitalCount + '회'}"
+                  >0회</small
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 통계 그래프 추가 -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">시간대별 응급 상황</h5>
+                <canvas id="hourlyChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">예상/실제 소요시간 비교</h5>
+                <canvas id="timeComparisonChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form th:action="@{/admin}" method="get" class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label">시작일</label>
+            <input
+              type="date"
+              name="startDate"
+              class="form-control"
+              th:value="${param.startDate}"
+            />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">종료일</label>
+            <input
+              type="date"
+              name="endDate"
+              class="form-control"
+              th:value="${param.endDate}"
+            />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">긴급도</label>
+            <select
+              name="urgencyLevel"
+              class="form-select"
+              th:value="${param.urgencyLevel}"
+            >
+              <option value="">전체</option>
+              <option value="emergency">응급</option>
+              <option value="normal">일반</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">검색</button>
+          </div>
+        </form>
+
+        <div class="table-responsive">
+          <style>
+            .table-custom {
+              min-width: 1000px;
+              --bs-table-striped-bg: #f8f9fa;
+            }
+            .table-custom th,
+            .table-custom td {
+              white-space: nowrap;
+              max-width: 300px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              vertical-align: middle;
+            }
+            .content-cell {
+              max-width: 400px;
+            }
+            .modal-table {
+              width: 100%;
+              margin-bottom: 0;
+              --bs-table-striped-bg: #f8f9fa;
+            }
+            .modal-table th {
+              background-color: #f8f9fa;
+              text-align: center;
+              padding: 12px;
+            }
+            .modal-table td {
+              padding: 12px;
+              vertical-align: middle;
+            }
+            .rank-cell {
+              text-align: center;
+              width: 80px;
+            }
+            .custom-badge {
+              padding: 6px 12px;
+              font-size: 0.875rem;
+            }
+            .modal-body {
+              padding: 1.5rem;
+            }
+            .table-custom tbody tr:nth-of-type(even),
+            .modal-table tbody tr:nth-of-type(even) {
+              background-color: var(--bs-table-striped-bg) !important;
+            }
+            .table-custom tbody tr:hover,
+            .modal-table tbody tr:hover {
+              background-color: rgba(0, 0, 0, 0.075) !important;
+              cursor: pointer;
+            }
+            .table-custom tr.emergency {
+              border: 2px solid #dc3545;
+            }
+            .table-custom tr.emergency td:first-child::before,
+            .modal-table tr.emergency td:first-child::before {
+              display: none;
+            }
+          </style>
+          <table class="table table-custom table-striped">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>응급 상황 내용</th>
+                <th>발생 시각</th>
+                <th>위치 (위도/경도)</th>
+                <th>긴급도</th>
+                <th>추천 병원</th>
+                <th>상세 정보</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                th:each="log, iterStat : ${logList.content}"
+                th:class="${log.urgencyLevel <= 2 ? 'emergency' : ''}"
+              >
+                <td th:text="${iterStat.index + 1}"></td>
+                <td class="content-cell" th:text="${log.request}"></td>
+                <td th:text="${log.datetime}"></td>
+                <td>
+                  <span
+                    th:text="${#numbers.formatDecimal(log.latitude, 1, 6)}"
+                  ></span>
+                  <span>/</span>
+                  <span
+                    th:text="${#numbers.formatDecimal(log.longitude, 1, 6)}"
+                  ></span>
+                </td>
+                <td>
+                  <span
+                    th:class="${'badge ' + 
+                      (log.urgencyLevel <= 2 ? 'text-bg-danger' : 'text-bg-success')}"
+                    th:text="${log.urgencyLevel <= 2 ? '응급' : '일반'}"
+                  >
+                  </span>
+                </td>
+                <td>
+                  <span
+                    th:if="${not #lists.isEmpty(log.hospitalLogs)}"
+                    th:text="${log.hospitalLogs[0].hospitalName + ' 외 ' + (#lists.size(log.hospitalLogs) - 1)}"
+                  >
+                  </span>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="modal"
+                    th:data-bs-target="'#detailModal' + ${iterStat.index}"
+                  >
+                    상세보기
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 페이지네이션 -->
+        <nav aria-label="Page navigation" class="mt-4">
+          <ul class="pagination justify-content-center">
+            <li
+              class="page-item"
+              th:classappend="${!logList.hasPrevious()} ? 'disabled'"
+            >
+              <a
+                class="page-link"
+                th:href="@{/admin(page=${logList.number - 1})}"
+                >&laquo; 이전</a
+              >
+            </li>
+            <li class="page-item disabled">
+              <span
+                class="page-link"
+                th:text="${logList.number + 1} + '/' + ${logList.totalPages}"
+              ></span>
+            </li>
+            <li
+              class="page-item"
+              th:classappend="${!logList.hasNext()} ? 'disabled'"
+            >
+              <a
+                class="page-link"
+                th:href="@{/admin(page=${logList.number + 1})}"
+                >다음 &raquo;</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+
+    <!-- 상세 정보 모달 -->
+    <div
+      th:each="log, iterStat : ${logList.content}"
+      th:id="'detailModal' + ${iterStat.index}"
+      class="modal fade"
+      tabindex="-1"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">상세 정보</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <!-- 응급 상황 정보 -->
+              <div class="col-12">
+                <div class="card">
+                  <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">
+                      응급 상황 내용
+                    </h6>
+                    <p class="card-text" th:text="${log.request}"></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 추천 병원 버튼 -->
+              <div class="col-md-6">
+                <button
+                  class="btn btn-primary w-100"
+                  data-bs-toggle="modal"
+                  th:data-bs-target="'#hospitalModal' + ${iterStat.index}"
+                >
+                  <i class="bi bi-hospital"></i> 추천 병원 목록 보기
+                  <span
+                    class="badge bg-white text-primary ms-2"
+                    th:text="${#lists.size(log.hospitalLogs)}"
+                  >
+                  </span>
+                </button>
+              </div>
+
+              <!-- 소방서 버튼 -->
+              <div
+                class="col-md-6"
+                th:if="${not #lists.isEmpty(log.fireStationLogs)}"
+              >
+                <button
+                  class="btn btn-danger w-100"
+                  data-bs-toggle="modal"
+                  th:data-bs-target="'#fireStationModal' + ${iterStat.index}"
+                >
+                  <i class="bi bi-fire"></i> 소방서 목록 보기
+                  <span
+                    class="badge bg-white text-danger ms-2"
+                    th:text="${#lists.size(log.fireStationLogs)}"
+                  >
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 병원 목록 모달 -->
+    <div
+      th:each="log, iterStat : ${logList.content}"
+      th:id="'hospitalModal' + ${iterStat.index}"
+      class="modal fade"
+      tabindex="-1"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">추천 병원 목록</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="table-responsive">
+              <table class="table table-bordered modal-table">
+                <thead>
+                  <tr>
+                    <th class="rank-cell">순위</th>
+                    <th>병원명</th>
+                    <th>주소</th>
+                    <th>연락처</th>
+                    <th>예상 소요시간</th>
+                    <th>실제 소요시간</th>
+                    <th>액션</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="hospital, hospitalStat : ${log.hospitalLogs}">
+                    <td
+                      class="rank-cell"
+                      th:text="${hospitalStat.index + 1}"
+                    ></td>
+                    <td th:text="${hospital.hospitalName}"></td>
+                    <td th:text="${hospital.address}"></td>
+                    <td th:text="${hospital.phoneNumber1}"></td>
+                    <td th:text="${hospital.estimatedTime + '분'}"></td>
+                    <td>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm actual-time"
+                        th:value="${hospital.actualTime}"
+                        th:data-id="${hospital.id}"
+                      />
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-primary save-time-btn">
+                        저장
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 소방서 목록 모달 -->
+    <div
+      th:each="log, iterStat : ${logList.content}"
+      th:id="'fireStationModal' + ${iterStat.index}"
+      class="modal fade"
+      tabindex="-1"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">소방서 목록</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="table-responsive">
+              <table class="table table-bordered modal-table">
+                <thead>
+                  <tr>
+                    <th class="rank-cell">순위</th>
+                    <th>소방서명</th>
+                    <th>주소</th>
+                    <th>연락처</th>
+                    <th>예상 소요시간</th>
+                    <th>실제 소요시간</th>
+                    <th>액션</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    th:each="fireStation, fireStationStat : ${log.fireStationLogs}"
+                  >
+                    <td
+                      class="rank-cell"
+                      th:text="${fireStationStat.index + 1}"
+                    ></td>
+                    <td th:text="${fireStation.name}"></td>
+                    <td th:text="${fireStation.address}"></td>
+                    <td th:text="${fireStation.phoneNumber}"></td>
+                    <td th:text="${fireStation.estimatedTime + '분'}"></td>
+                    <td>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm actual-time"
+                        th:value="${fireStation.actualTime}"
+                        th:data-id="${fireStation.id}"
+                      />
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-danger save-time-btn-fire">
+                        저장
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart.js 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script th:inline="javascript">
+      /*<![CDATA[*/
+      const hourlyData = /*[[${stats.hourlyStats}]]*/ {};
+      const timeData = /*[[${stats.timeComparison}]]*/ [];
+      /*]]>*/
+
+      // 시간대별 응급 상황 차트
+      const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+      new Chart(hourlyCtx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(hourlyData).map((hour) => `${hour}시`),
+          datasets: [
+            {
+              label: '응급 상황 발생 건수',
+              data: Object.values(hourlyData),
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1,
+              },
+            },
+          },
+        },
+      });
+
+      // 예상/실제 소요시간 비교 차트
+      const timeCtx = document
+        .getElementById('timeComparisonChart')
+        .getContext('2d');
+      new Chart(timeCtx, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: '소요시간 비교',
+              data: timeData.map((item) => ({
+                x: item.estimated,
+                y: item.actual,
+              })),
+              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: '예상 소요시간 (분)',
+              },
+            },
+            y: {
+              title: {
+                display: true,
+                text: '실제 소요시간 (분)',
+              },
+            },
+          },
+        },
+      });
+
+      console.log('시간별 데이터:', hourlyData);
+      console.log('소요시간 데이터:', timeData);
+    </script>
+  </div>
+</html>

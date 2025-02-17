@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>응급 의료 서비스</title>
+    <!-- 부트스트랩 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- 부트스트랩 아이콘 -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+    />
+  </head>
+  <body class="d-flex flex-column min-vh-100">
+    <!-- Header 삽입 -->
+    <nav th:replace="fragments/header :: header"></nav>
+
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white">
+              <h3 class="card-title mb-0">
+                <i class="bi bi-hospital me-2"></i>응급 의료 서비스
+              </h3>
+            </div>
+            <div class="card-body">
+              <form
+                action="recommend_hospital"
+                method="get"
+                class="needs-validation"
+                novalidate
+              >
+                <div class="mb-4">
+                  <label for="request" class="form-label fw-bold">
+                    <i class="bi bi-chat-dots me-2"></i>응급 상황 설명
+                  </label>
+                  <div class="input-group">
+                    <textarea
+                      class="form-control form-control-lg shadow-sm"
+                      id="request"
+                      name="request"
+                      rows="4"
+                      required
+                      placeholder="현재 응급 상황을 자세히 설명해주세요..."
+                      style="resize: none; border-radius: 0.5rem 0 0 0.5rem"
+                    ></textarea>
+                    <button
+                      class="btn btn-outline-primary px-4 shadow-sm"
+                      type="button"
+                      id="recordButton"
+                      style="border-radius: 0 0.5rem 0.5rem 0; border-left: 0"
+                    >
+                      <i class="bi bi-mic-fill fs-4"></i>
+                    </button>
+                  </div>
+                  <div class="form-text text-muted mt-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    마이크 버튼을 눌러 음성으로 상황을 설명할 수 있습니다.
+                  </div>
+                  <div class="invalid-feedback">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    응급 상황을 설명해주세요.
+                  </div>
+                </div>
+
+                <!-- 특이사항 버튼 그룹 -->
+                <div class="mb-4">
+                  <label class="form-label fw-bold">
+                    <i class="bi bi-exclamation-triangle me-2"></i>특이사항
+                  </label>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      class="btn btn-outline-warning btn-sm condition-btn"
+                      data-condition="페니실린 알레르기"
+                    >
+                      <i class="bi bi-shield-exclamation me-1"></i>페니실린
+                      알레르기
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-warning btn-sm condition-btn"
+                      data-condition="천식"
+                    >
+                      <i class="bi bi-lungs me-1"></i>천식
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm condition-btn"
+                      data-condition="Rh- 혈액형"
+                    >
+                      <i class="bi bi-droplet me-1"></i>Rh- 혈액형
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-warning btn-sm condition-btn"
+                      data-condition="임신"
+                    >
+                      <i class="bi bi-person-heart me-1"></i>임신
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-warning btn-sm condition-btn"
+                      data-condition="당뇨"
+                    >
+                      <i class="bi bi-activity me-1"></i>당뇨
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 위치 정보 -->
+                <div class="row mb-4">
+                  <div class="col-md-6">
+                    <label for="latitude" class="form-label fw-bold">
+                      <i class="bi bi-geo-alt me-2"></i>위도
+                    </label>
+                    <input
+                      type="number"
+                      class="form-control shadow-sm"
+                      id="latitude"
+                      name="latitude"
+                      step="any"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label for="longitude" class="form-label fw-bold">
+                      <i class="bi bi-geo-alt me-2"></i>경도
+                    </label>
+                    <input
+                      type="number"
+                      class="form-control shadow-sm"
+                      id="longitude"
+                      name="longitude"
+                      step="any"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <!-- 상세 위치 정보 -->
+                <div class="row mb-4">
+                  <div class="col-md-4">
+                    <label for="building" class="form-label fw-bold">
+                      <i class="bi bi-building me-2"></i>건물명
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control shadow-sm"
+                      id="building"
+                      name="building"
+                      placeholder="예: 대한빌딩"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="floor" class="form-label fw-bold">
+                      <i class="bi bi-layers me-2"></i>층수
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control shadow-sm"
+                      id="floor"
+                      name="floor"
+                      placeholder="예: 3층"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="unit" class="form-label fw-bold">
+                      <i class="bi bi-door-closed me-2"></i>호수
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control shadow-sm"
+                      id="unit"
+                      name="unit"
+                      placeholder="예: 302호"
+                    />
+                  </div>
+                </div>
+
+                <style>
+                  /* 기존 스타일 유지 */
+                  .condition-btn.active {
+                    background-color: var(--bs-warning);
+                    color: white;
+                    border-color: var(--bs-warning);
+                  }
+
+                  .condition-btn[data-condition*='혈액형'].active {
+                    background-color: var(--bs-danger);
+                    border-color: var(--bs-danger);
+                  }
+                </style>
+
+                <script>
+                  // 특이사항 버튼 클릭 이벤트
+                  document
+                    .querySelectorAll('.condition-btn')
+                    .forEach((button) => {
+                      button.addEventListener('click', function () {
+                        this.classList.toggle('active');
+
+                        // 현재 선택된 특이사항들을 텍스트에 추가/제거
+                        const conditions = Array.from(
+                          document.querySelectorAll('.condition-btn.active')
+                        ).map((btn) => btn.dataset.condition);
+
+                        let currentText = requestTextarea.value.trim();
+                        // 기존 특이사항 텍스트 제거
+                        currentText = currentText
+                          .replace(/\[특이사항:.*?\]/g, '')
+                          .trim();
+
+                        // 새로운 특이사항 추가
+                        if (conditions.length > 0) {
+                          const conditionText = `[특이사항: ${conditions.join(
+                            ', '
+                          )}] `;
+                          requestTextarea.value = conditionText + currentText;
+                        } else {
+                          requestTextarea.value = currentText;
+                        }
+                      });
+                    });
+                </script>
+
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-search me-2"></i>주변 응급 시설 찾기
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div class="card-footer text-muted text-center">
+              <small>
+                <i class="bi bi-info-circle me-1"></i>
+                위치 정보를 허용하시면 자동으로 현재 위치가 입력됩니다.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer 삽입 -->
+    <th:block th:replace="fragments/footer :: footer"></th:block>
+
+    <!-- 부트스트랩 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 위치 정보 자동 입력 스크립트 -->
+    <script>
+      // 폼 유효성 검사 활성화
+      (function () {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+          form.addEventListener(
+            'submit',
+            function (event) {
+              if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+              form.classList.add('was-validated');
+            },
+            false
+          );
+        });
+      })();
+
+      // 위치 정보 자동 입력
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+          document.getElementById('latitude').value = position.coords.latitude;
+          document.getElementById('longitude').value =
+            position.coords.longitude;
+        });
+      }
+    </script>
+
+    <!-- 음성 녹음 스크립트 -->
+    <script>
+      const recordButton = document.getElementById('recordButton');
+      const requestTextarea = document.getElementById('request');
+      let recognition = null;
+      let finalTranscript = ''; // 전역 변수로 선언
+
+      // 브라우저 호환성 체크
+      if (
+        'SpeechRecognition' in window ||
+        'webkitSpeechRecognition' in window
+      ) {
+        recognition = new (window.SpeechRecognition ||
+          window.webkitSpeechRecognition)();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'ko-KR';
+
+        recognition.onresult = function (event) {
+          console.log('음성 인식 결과:', event.results);
+          let interimTranscript = '';
+
+          // 현재 결과만 처리
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+
+          // 최종 텍스트와 임시 텍스트 모두 표시
+          requestTextarea.value = finalTranscript + interimTranscript;
+        };
+
+        recognition.onerror = function (event) {
+          console.error('음성 인식 오류:', event.error);
+          alert('음성 인식 중 오류가 발생했습니다.');
+          resetRecordButton();
+        };
+
+        recognition.onend = function () {
+          console.log('음성 인식 종료');
+          if (recordButton.classList.contains('btn-danger')) {
+            recognition.start();
+          } else {
+            resetRecordButton();
+          }
+        };
+
+        recognition.onstart = function () {
+          console.log('음성 인식 시작');
+        };
+      }
+
+      function resetRecordButton() {
+        recordButton.innerHTML = '<i class="bi bi-mic-fill fs-4"></i>';
+        recordButton.classList.remove('btn-danger');
+        recordButton.classList.add('btn-outline-primary');
+      }
+
+      recordButton.addEventListener('click', function () {
+        if (!recognition) {
+          alert('이 브라우저는 음성 인식을 지원하지 않습니다.');
+          return;
+        }
+
+        if (recordButton.classList.contains('btn-outline-primary')) {
+          // 녹음 시작
+          try {
+            finalTranscript = ''; // 전역 변수 초기화
+            requestTextarea.value = ''; // textarea 초기화
+            recognition.start();
+            recordButton.innerHTML = '<i class="bi bi-stop-fill fs-4"></i>';
+            recordButton.classList.remove('btn-outline-primary');
+            recordButton.classList.add('btn-danger');
+          } catch (error) {
+            console.error('음성 인식 시작 오류:', error);
+          }
+        } else {
+          // 녹음 중지
+          try {
+            recognition.stop();
+            resetRecordButton();
+          } catch (error) {
+            console.error('음성 인식 중지 오류:', error);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

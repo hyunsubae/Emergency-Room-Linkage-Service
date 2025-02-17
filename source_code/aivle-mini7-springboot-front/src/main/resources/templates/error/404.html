@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Error Page</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #ffe6e6;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        img {
+            max-width: 500px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        .error-text {
+            font-size: 36px;
+            font-weight: bold;
+            color: #000000;
+            margin: 10px 0;
+        }
+        .alert-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #cc0000;
+            margin-bottom: 10px;
+        }
+        .description {
+            font-size: 18px;
+            color: #333333;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 20px;
+            font-size: 18px;
+            color: #ff0000;
+            background-color: #ffffff;
+            border: 1px solid #ff0000;
+            border-radius: 30px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0d6efd;
+            color: #ffffff;
+        }
+        .btn i {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+<img src="/images/404.png" alt="404 Error">
+<div class="error-text">ERROR</div>
+<div class="description">
+    <div class="alert-text">404 응급상황 발생!</div>
+    <div class="description">찾으시는 페이지가 의식을 잃었습니다. 홈으로 돌아가 다른 병원을 찾아보세요.</div>
+</div>
+<!-- 홈 버튼 -->
+<a href="/" class="btn">
+    <i class="bi bi-house-door-fill"></i>홈으로 돌아가기
+</body>
+</html>

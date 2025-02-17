@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <title>응급 의료 서비스</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 부트스트랩 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- 부트스트랩 아이콘 -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+    />
+    <!-- 네이버 지도 API 스크립트 -->
+    <script
+      type="text/javascript"
+      src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=opyx24jxvh&submodules=geocoder,direction"
+    ></script>
+    <script th:inline="javascript">
+      const headers = {
+        'X-NCP-APIGW-API-KEY-ID':
+          /*[[${@environment.getProperty('naver.map.client.id')}]]*/ '',
+        'X-NCP-APIGW-API-KEY':
+          /*[[${@environment.getProperty('naver.map.client.secret')}]]*/ '',
+      };
+    </script>
+  </head>
+  <body class="d-flex flex-column min-vh-100">
+    <!-- Header 삽입 -->
+    <th:block th:replace="fragments/header :: header"></th:block>
+
+    <div class="container py-5">
+      <!-- 홈 버튼 -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <a href="/" class="btn btn-outline-primary mb-3">
+            <i class="bi bi-house-door-fill me-2"></i>홈으로 돌아가기
+          </a>
+        </div>
+      </div>
+
+      <!-- 응급 상황 요약 정보 -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title text-primary">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>응급 상황
+                정보
+              </h5>
+              <p class="card-text" th:text="${response.summary}"></p>
+              <div
+                th:if="${response.urgencyLevel != null}"
+                th:class="${'badge ' + (response.urgencyLevel <= 3 ? 'bg-danger' : (response.urgencyLevel <= 5 ? 'bg-warning' : 'bg-info'))}"
+              >
+                <span
+                  th:text="'긴급도: ' + (${response.urgencyLevel} + 1) + '등급'"
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 병원 정보 -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title text-primary mb-4">
+                <i class="bi bi-hospital-fill me-2"></i>주변 응급 의료 기관
+              </h5>
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th>#</th>
+                      <th>병원명</th>
+                      <th>주소</th>
+                      <th>응급의료기관 유형</th>
+                      <th>연락처</th>
+                      <th>거리</th>
+                      <th>소요시간</th>
+                      <th>지도</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr th:each="hospital, iterStat : ${hospitalList}">
+                      <td th:text="${iterStat.index + 1}"></td>
+                      <td>
+                        <strong th:text="${hospital.hospitalName}"></strong>
+                      </td>
+                      <td th:text="${hospital.address}"></td>
+                      <td>
+                        <span
+                          class="badge bg-info"
+                          th:text="${hospital.emergencyMedicalInstitutionType}"
+                        ></span>
+                      </td>
+                      <td>
+                        <div th:text="${hospital.phoneNumber1}"></div>
+                        <div
+                          th:if="${hospital.phoneNumber3}"
+                          th:text="${hospital.phoneNumber3}"
+                          class="text-muted small"
+                        ></div>
+                      </td>
+                      <td>
+                        <span
+                          class="badge bg-success"
+                          th:text="${#numbers.formatDecimal(hospital.distance, 1, 1)} + ' km'"
+                        ></span>
+                      </td>
+                      <td>
+                        <span
+                          class="badge bg-info"
+                          th:text="${hospital.estimatedTime} + '분'"
+                        ></span>
+                      </td>
+                      <td>
+                        <button
+                          class="btn btn-sm btn-outline-primary show-route"
+                          th:data-lat="${hospital.latitude}"
+                          th:data-lng="${hospital.longitude}"
+                          th:data-name="${hospital.hospitalName}"
+                          title="길찾기"
+                        >
+                          <i class="bi bi-sign-turn-right-fill"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 소방서 정보 -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title text-primary mb-4">
+                <i class="bi bi-fire me-2"></i>주변 소방서
+              </h5>
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th>#</th>
+                      <th>소방서명</th>
+                      <th>주소</th>
+                      <th>유형</th>
+                      <th>연락처</th>
+                      <th>거리</th>
+                      <th>소요시간</th>
+                      <th>지도</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr th:each="station, iterStat : ${fireStationList}">
+                      <td th:text="${iterStat.index + 1}"></td>
+                      <td>
+                        <strong th:text="${station.name}"></strong>
+                      </td>
+                      <td th:text="${station.address}"></td>
+                      <td>
+                        <span
+                          class="badge bg-warning text-dark"
+                          th:text="${station.type}"
+                        ></span>
+                      </td>
+                      <td th:text="${station.phoneNumber}"></td>
+                      <td>
+                        <span
+                          class="badge bg-success"
+                          th:text="${#numbers.formatDecimal(station.distance, 1, 1)} + ' km'"
+                        ></span>
+                      </td>
+                      <td>
+                        <span
+                          class="badge bg-info"
+                          th:text="${station.estimatedTime} + '분'"
+                        ></span>
+                      </td>
+                      <td>
+                        <button
+                          class="btn btn-sm btn-outline-primary show-route"
+                          th:data-lat="${station.latitude}"
+                          th:data-lng="${station.longitude}"
+                          th:data-name="${station.name}"
+                          title="길찾기"
+                        >
+                          <i class="bi bi-sign-turn-right-fill"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 지도 컨테이너 -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div id="map-container" style="display: none">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div id="map" style="width: 100%; height: 400px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer 삽입 -->
+    <th:block th:replace="fragments/footer :: footer"></th:block>
+
+    <!-- 부트스트랩 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 자바스크립트 추가 -->
+    <script>
+      let map = null;
+      let marker = null;
+      let currentPosition = null;
+      let currentPolyline = null;
+
+      window.addEventListener('load', function () {
+        // 현재 위치 가져오기
+        navigator.geolocation.getCurrentPosition((position) => {
+          currentPosition = new naver.maps.LatLng(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+        });
+
+        // 길찾기 버튼 클릭 이벤트
+        document.querySelectorAll('.show-route').forEach((button) => {
+          button.addEventListener('click', async function () {
+            const lat = parseFloat(this.getAttribute('data-lat'));
+            const lng = parseFloat(this.getAttribute('data-lng'));
+            const name = this.getAttribute('data-name');
+
+            document.getElementById('map-container').style.display = 'block';
+
+            const destination = new naver.maps.LatLng(lat, lng);
+
+            if (!map) {
+              map = new naver.maps.Map('map', {
+                center: currentPosition,
+                zoom: 13,
+                zoomControl: true,
+                zoomControlOptions: {
+                  position: naver.maps.Position.TOP_RIGHT,
+                },
+              });
+            }
+
+            // 기존 마커와 경로 제거
+            if (marker) {
+              marker.setMap(null);
+            }
+            if (currentPolyline) {
+              currentPolyline.setMap(null);
+            }
+
+            // 도착지 마커
+            new naver.maps.Marker({
+              position: currentPosition,
+              map: map,
+              icon: {
+                content:
+                  '<div style="padding: 5px; background: #2196F3; color: white; border-radius: 50%; font-size: 12px;">도착</div>',
+                anchor: new naver.maps.Point(20, 20),
+              },
+            });
+
+            // 출발지 마커
+            marker = new naver.maps.Marker({
+              position: destination,
+              map: map,
+              icon: {
+                content:
+                  '<div style="padding: 5px; background: #FF5722; color: white; border-radius: 50%; font-size: 12px;">출발</div>',
+                anchor: new naver.maps.Point(20, 20),
+              },
+            });
+
+            // 경로 탐색 API 호출
+            try {
+              const response = await fetch(
+                `/api/directions?startLat=${currentPosition.lat()}&startLng=${currentPosition.lng()}&endLat=${lat}&endLng=${lng}`
+              );
+
+              const data = await response.json();
+              console.log('경로 데이터:', data); // 응답 데이터 확인용 로그
+
+              if (data.route && data.route.traoptimal) {
+                // 경로 그리기
+                const path = data.route.traoptimal[0].path.map(
+                  ([lng, lat]) => new naver.maps.LatLng(lat, lng) // 좌표 순서 수정
+                );
+
+                currentPolyline = new naver.maps.Polyline({
+                  map: map,
+                  path: path,
+                  strokeColor: '#5347AA',
+                  strokeWeight: 5,
+                  strokeOpacity: 0.8,
+                  strokeStyle: 'solid',
+                });
+
+                // 경로가 모두 보이도록 지도 범위 조정
+                const bounds = new naver.maps.LatLngBounds(
+                  path.reduce(
+                    (bounds, coord) => bounds.extend(coord),
+                    new naver.maps.LatLngBounds()
+                  )
+                );
+                map.fitBounds(bounds);
+              } else {
+                console.error('경로 데이터가 없습니다:', data);
+              }
+            } catch (error) {
+              console.error('경로 탐색 중 오류 발생:', error);
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
